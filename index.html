@@ -192,8 +192,9 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">Posted on</span>
+      
 
-      <time title="Created: 2021-07-31 11:05:27" itemprop="dateCreated datePublished" datetime="2021-07-31T11:05:27+08:00">2021-07-31</time>
+      <time title="Created: 2021-07-31 11:05:27 / Modified: 11:32:30" itemprop="dateCreated datePublished" datetime="2021-07-31T11:05:27+08:00">2021-07-31</time>
     </span>
 
   
@@ -206,7 +207,23 @@
     
     
     <div class="post-body" itemprop="articleBody">
-          
+          <h2 id="理解Linux中进程、线程、底层描述符的底层原理"><a href="#理解Linux中进程、线程、底层描述符的底层原理" class="headerlink" title="理解Linux中进程、线程、底层描述符的底层原理"></a>理解Linux中进程、线程、底层描述符的底层原理</h2><p>一、<br>Linux中的进程的结构体定义如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> &#123;</span></span><br><span class="line">    <span class="comment">// 进程状态</span></span><br><span class="line">    <span class="keyword">long</span>              state;</span><br><span class="line">    <span class="comment">// 虚拟内存结构体</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">mm_struct</span>  *<span class="title">mm</span>;</span></span><br><span class="line">    <span class="comment">// 进程号</span></span><br><span class="line">    <span class="keyword">pid_t</span>             pid;</span><br><span class="line">    <span class="comment">// 指向父进程的指针</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> __<span class="title">rcu</span>  *<span class="title">parent</span>;</span></span><br><span class="line">    <span class="comment">// 子进程列表</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>        <span class="title">children</span>;</span></span><br><span class="line">    <span class="comment">// 存放文件系统信息的指针</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">fs_struct</span>        *<span class="title">fs</span>;</span></span><br><span class="line">    <span class="comment">// 一个数组，包含该进程打开的文件指针</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">files_struct</span>     *<span class="title">files</span>;</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><strong>文件操作符（files）</strong><br>一般来说，一个进程会从files[0]读入输入，然后从files[1]写入输出，将错误信息写入files[3]<br>我们执行命令的时候，可以将files[0]指向某个具体的文件，这样命令执行的时候，就不会从键盘中读取输入了  </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">command</span> &lt; file.txt</span><br></pre></td></tr></table></figure>
+<p>同样，输出也可以进行重定向，这样file[1]可以指向具体的某个文件，就不会输出到显示器上了</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">command &gt; file.txt</span><br></pre></td></tr></table></figure>
+<p>错误重定向同理  </p>
+<p><strong>管道符</strong>则是将一个进程的输出流和另一个进程的输入流架起一个【管道】，这样数据就会在其中传递</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">command1 | command2 | command3</span><br></pre></td></tr></table></figure>
+
+<p>举个例子，我们平常运行java程序时会用如下命令</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup java -jar xxx.jar &gt;xxx.out 2&gt;&amp;1 &amp;</span><br></pre></td></tr></table></figure>
+<p>这条命令会将java程序的标准输出(file[1])重定向到xxx.out文件中，随后将错误输出(file[2])重定向到标准输出中，其中&amp;1代表标准输出，如果用1则只会生成一个</p>
+</li>
+</ul>
+
       
     </div>
 

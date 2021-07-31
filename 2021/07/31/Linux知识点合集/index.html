@@ -20,13 +20,15 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"yuanyite.github.io","root":"/","images":"/images","scheme":"Gemini","version":"8.6.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+<meta name="description" content="理解Linux中进程、线程、底层描述符的底层原理一、Linux中的进程的结构体定义如下： 12345678910111213141516struct task_struct &amp;#123;    &#x2F;&#x2F; 进程状态    long              state;    &#x2F;&#x2F; 虚拟内存结构体    struct mm_struct  *mm;    &#x2F;&#x2F; 进程号    pid_t">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux知识点合集">
 <meta property="og:url" content="https://yuanyite.github.io/2021/07/31/Linux%E7%9F%A5%E8%AF%86%E7%82%B9%E5%90%88%E9%9B%86/index.html">
 <meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="理解Linux中进程、线程、底层描述符的底层原理一、Linux中的进程的结构体定义如下： 12345678910111213141516struct task_struct &amp;#123;    &#x2F;&#x2F; 进程状态    long              state;    &#x2F;&#x2F; 虚拟内存结构体    struct mm_struct  *mm;    &#x2F;&#x2F; 进程号    pid_t">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2021-07-31T03:05:27.000Z">
-<meta property="article:modified_time" content="2021-07-31T03:05:27.879Z">
+<meta property="article:modified_time" content="2021-07-31T03:32:30.503Z">
 <meta property="article:author" content="袁以特">
 <meta name="twitter:card" content="summary">
 
@@ -92,7 +94,7 @@
 
   <aside class="sidebar">
 
-    <div class="sidebar-inner sidebar-overview-active">
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
       <ul class="sidebar-nav">
         <li class="sidebar-nav-toc">
           Table of Contents
@@ -105,6 +107,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%90%86%E8%A7%A3Linux%E4%B8%AD%E8%BF%9B%E7%A8%8B%E3%80%81%E7%BA%BF%E7%A8%8B%E3%80%81%E5%BA%95%E5%B1%82%E6%8F%8F%E8%BF%B0%E7%AC%A6%E7%9A%84%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text">理解Linux中进程、线程、底层描述符的底层原理</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -195,8 +198,9 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">Posted on</span>
+      
 
-      <time title="Created: 2021-07-31 11:05:27" itemprop="dateCreated datePublished" datetime="2021-07-31T11:05:27+08:00">2021-07-31</time>
+      <time title="Created: 2021-07-31 11:05:27 / Modified: 11:32:30" itemprop="dateCreated datePublished" datetime="2021-07-31T11:05:27+08:00">2021-07-31</time>
     </span>
 
   
@@ -209,7 +213,23 @@
     
     
     <div class="post-body" itemprop="articleBody">
-        
+        <h2 id="理解Linux中进程、线程、底层描述符的底层原理"><a href="#理解Linux中进程、线程、底层描述符的底层原理" class="headerlink" title="理解Linux中进程、线程、底层描述符的底层原理"></a>理解Linux中进程、线程、底层描述符的底层原理</h2><p>一、<br>Linux中的进程的结构体定义如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> &#123;</span></span><br><span class="line">    <span class="comment">// 进程状态</span></span><br><span class="line">    <span class="keyword">long</span>              state;</span><br><span class="line">    <span class="comment">// 虚拟内存结构体</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">mm_struct</span>  *<span class="title">mm</span>;</span></span><br><span class="line">    <span class="comment">// 进程号</span></span><br><span class="line">    <span class="keyword">pid_t</span>             pid;</span><br><span class="line">    <span class="comment">// 指向父进程的指针</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> __<span class="title">rcu</span>  *<span class="title">parent</span>;</span></span><br><span class="line">    <span class="comment">// 子进程列表</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>        <span class="title">children</span>;</span></span><br><span class="line">    <span class="comment">// 存放文件系统信息的指针</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">fs_struct</span>        *<span class="title">fs</span>;</span></span><br><span class="line">    <span class="comment">// 一个数组，包含该进程打开的文件指针</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">files_struct</span>     *<span class="title">files</span>;</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><strong>文件操作符（files）</strong><br>一般来说，一个进程会从files[0]读入输入，然后从files[1]写入输出，将错误信息写入files[3]<br>我们执行命令的时候，可以将files[0]指向某个具体的文件，这样命令执行的时候，就不会从键盘中读取输入了  </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">command</span> &lt; file.txt</span><br></pre></td></tr></table></figure>
+<p>同样，输出也可以进行重定向，这样file[1]可以指向具体的某个文件，就不会输出到显示器上了</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">command &gt; file.txt</span><br></pre></td></tr></table></figure>
+<p>错误重定向同理  </p>
+<p><strong>管道符</strong>则是将一个进程的输出流和另一个进程的输入流架起一个【管道】，这样数据就会在其中传递</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">command1 | command2 | command3</span><br></pre></td></tr></table></figure>
+
+<p>举个例子，我们平常运行java程序时会用如下命令</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup java -jar xxx.jar &gt;xxx.out 2&gt;&amp;1 &amp;</span><br></pre></td></tr></table></figure>
+<p>这条命令会将java程序的标准输出(file[1])重定向到xxx.out文件中，随后将错误输出(file[2])重定向到标准输出中，其中&amp;1代表标准输出，如果用1则只会生成一个</p>
+</li>
+</ul>
+
     </div>
 
     
